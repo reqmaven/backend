@@ -15,6 +15,8 @@ class RequirementSource(models.Model):
 class RequirementType(models.IntegerChoices):
     Requirement = 1
     Recommendation = 2
+    Permission = 3
+
 
 class Applicability(models.IntegerChoices):
     Todo = 0

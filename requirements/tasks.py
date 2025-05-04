@@ -1,8 +1,10 @@
 import csv
 from .models import Project, RequirementSource, Requirement
 
-type_map = {'Requirement': 0,
-            'Recommendation': 1}
+type_map = {'Requirement': 1,
+            'Recommendation': 2,
+            'Permission': 3}
+
 def get_parent(project, source_reference, row):
     identifier = row['ECSS Req. Identifier']
     number = "".join(filter(str.isnumeric, identifier))
