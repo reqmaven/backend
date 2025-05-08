@@ -1,13 +1,15 @@
-import csv
+import tempfile
 
+from pathlib import Path
 from rest_framework import viewsets, views, filters
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from django.core.files.storage import FileSystemStorage
 from .models import Requirement, Project, RequirementSource
 from .serializers import RequirementSerializer, FileUploadSerializer, ProjectSerializer, RequirementSourceSerializer, \
     RequirementChildrenSerializer
 from django_filters.rest_framework import DjangoFilterBackend
-from .tasks import import_requirements
+from .tasks import import_requirements, import_project_requirements, import_project_compressed
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -52,5 +54,40 @@ class RequirementImportView(views.APIView):
             import_requirements(file)
         except Exception as e:
             print(e)
+
+        return Response()
+
+class ProjectRequirementImportView(views.APIView):
+    serializer_class = FileUploadSerializer
+
+    def post(self, request):
+        file = request.FILES['file']
+        print(file, request.data)
+        requirement_source_id = int(request.data['source_reference'])
+        requirement_source = RequirementSource.objects.get(pk=requirement_source_id)
+        print(requirement_source, requirement_source.project, requirement_source_id)
+        try:
+            import_project_requirements(file, requirement_source)
+        except Exception as e:
+            print("Exception", e)
+
+        return Response()
+
+
+class ProjectRequirementSourceImportView(views.APIView):
+    serializer_class = FileUploadSerializer
+
+    def post(self, request):
+        file = request.FILES['file']
+        print(file, request.data)
+        project_id = int(request.data['project_id'])
+        try:
+            project = Project.objects.get(pk=project_id)
+            tmpdirname = Path(tempfile.mkdtemp())
+            FileSystemStorage(location=tmpdirname).save(file.name, file)
+            filepath = tmpdirname.joinpath(file.name)
+            import_project_compressed(filepath, project)
+        except Exception as e:
+            print("Exception", e)
 
         return Response()

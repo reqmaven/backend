@@ -19,7 +19,7 @@ from django.urls import path, include, re_path
 from rest_framework import routers
 
 from requirements.views import RequirementViewSet, RequirementImportView, ProjectsViewSet, RequirementSourceViewSet, \
-    RequirementChildrenViewSet
+    RequirementChildrenViewSet, ProjectRequirementImportView, ProjectRequirementSourceImportView
 
 router = routers.DefaultRouter()
 router.register(r'project', ProjectsViewSet)
@@ -30,5 +30,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
     #path('api-auth/', include('rest_framework.urls'))
-    path('requirements_import', RequirementImportView.as_view())
+    path('requirements_import', RequirementImportView.as_view()),
+    path('project_requirements_import', ProjectRequirementImportView.as_view()),
+    path('project_requirements_sources_import', ProjectRequirementSourceImportView.as_view()),
 ]

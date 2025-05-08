@@ -16,12 +16,27 @@ class RequirementSourceSerializer(serializers.ModelSerializer):
 
 
 class RequirementSerializer(serializers.ModelSerializer):
+    has_children = serializers.SerializerMethodField()
     class Meta:
         model = Requirement
         fields = '__all__'
 
+    def get_has_children(self, obj):
+        return obj.children.count() > 0
+
+
+class RequirementMinimalSerializer(serializers.ModelSerializer):
+    has_children = serializers.SerializerMethodField()
+    class Meta:
+        model = Requirement
+        fields = ['id', 'name', 'applicability', 'has_children']
+
+    def get_has_children(self, obj):
+        return obj.children.count() > 0
+
+
 class RequirementChildrenSerializer(serializers.ModelSerializer):
-    children = RequirementSerializer(many=True, read_only=True)
+    children = RequirementMinimalSerializer(many=True, read_only=True)
     class Meta:
         model = Requirement
         fields = ['children']
