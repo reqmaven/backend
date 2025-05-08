@@ -29,7 +29,7 @@ class RequirementMinimalSerializer(serializers.ModelSerializer):
     has_children = serializers.SerializerMethodField()
     class Meta:
         model = Requirement
-        fields = ['id', 'name', 'applicability', 'has_children']
+        fields = ['id', 'name', 'type', 'applicability', 'requirement', 'ie_puid', 'has_children']
 
     def get_has_children(self, obj):
         return obj.children.count() > 0
