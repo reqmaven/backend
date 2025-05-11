@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 from rest_framework import routers
+from rest_framework.authtoken import views
 
 from requirements.views import RequirementViewSet, RequirementImportView, ProjectsViewSet, RequirementSourceViewSet, \
     RequirementChildrenViewSet, ProjectRequirementImportView, ProjectRequirementSourceImportView
@@ -29,7 +30,8 @@ router.register(r'requirement-childrens', RequirementChildrenViewSet, basename='
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
-    #path('api-auth/', include('rest_framework.urls'))
+    path('api-auth/', include('rest_framework.urls')),
+    path('api-token-auth/', views.obtain_auth_token),
     path('requirements_import', RequirementImportView.as_view()),
     path('project_requirements_import', ProjectRequirementImportView.as_view()),
     path('project_requirements_sources_import', ProjectRequirementSourceImportView.as_view()),

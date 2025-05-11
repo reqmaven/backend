@@ -2,14 +2,23 @@ from rest_framework import serializers
 
 from requirements.models import Requirement, RequirementSource, Project
 
+class HistoricalRecordField(serializers.ListField):
+    child = serializers.DictField()
+
+    def to_representation(self, data):
+        return super().to_representation(data.values())
 
 class ProjectSerializer(serializers.ModelSerializer):
+    history = HistoricalRecordField(read_only=True)
+
     class Meta:
         model = Project
-        fields = '__all__'
+        fields = ['id', 'name', 'description', 'created_at', 'history']
 
 
 class RequirementSourceSerializer(serializers.ModelSerializer):
+    history = HistoricalRecordField(read_only=True)
+
     class Meta:
         model = RequirementSource
         fields = '__all__'
@@ -17,6 +26,8 @@ class RequirementSourceSerializer(serializers.ModelSerializer):
 
 class RequirementSerializer(serializers.ModelSerializer):
     has_children = serializers.SerializerMethodField()
+    history = HistoricalRecordField(read_only=True)
+
     class Meta:
         model = Requirement
         fields = '__all__'

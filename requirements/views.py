@@ -1,6 +1,7 @@
 import tempfile
 
 from pathlib import Path
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, views, filters
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -18,16 +19,25 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 1000
 # Create your views here.
 class ProjectsViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
 class RequirementSourceViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
     queryset = RequirementSource.objects.all()
     serializer_class = RequirementSourceSerializer
     filterset_fields = {'project': ['exact']}
     pagination_class = StandardResultsSetPagination
 
 class RequirementViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
     queryset = Requirement.objects.all()
     serializer_class = RequirementSerializer
     filterset_fields = {'project': ['exact', 'in'],
@@ -40,6 +50,8 @@ class RequirementViewSet(viewsets.ModelViewSet):
 
 
 class RequirementChildrenViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
     queryset = Requirement.objects.all()
     serializer_class = RequirementChildrenSerializer
 

@@ -3,6 +3,8 @@ Django==5.2
 django-cors-headers==4.7.0
 django-filter==25.1
 djangorestframework==3.16.0
+django-simple-history
 Markdown==3.8
 sqlparse==0.5.3
 psycopg2
+

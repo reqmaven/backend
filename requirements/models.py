@@ -1,16 +1,23 @@
 from django.db import models
+from simple_history.models import HistoricalRecords
 
 
 # Create your models here.
 class Project(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    history = HistoricalRecords()
 
 
 class RequirementSource(models.Model):
     name = models.CharField(max_length=100)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     description = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    history = HistoricalRecords()
 
 class RequirementType(models.IntegerChoices):
     Requirement = 1
@@ -27,6 +34,8 @@ class Applicability(models.IntegerChoices):
     Modified = 3
 
 class Requirement(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     source_reference = models.ForeignKey(RequirementSource, on_delete=models.CASCADE)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='children', null=True)
@@ -38,3 +47,4 @@ class Requirement(models.Model):
     applicability_comment = models.TextField(null=True, blank=True)
     requirement = models.TextField(null=True)
     notes = models.TextField(null=True, blank=True)
+    history = HistoricalRecords()
