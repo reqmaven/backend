@@ -20,13 +20,16 @@ from rest_framework import routers
 from rest_framework.authtoken import views
 
 from requirements.views import RequirementViewSet, RequirementImportView, ProjectsViewSet, RequirementSourceViewSet, \
-    RequirementChildrenViewSet, ProjectRequirementImportView, ProjectRequirementSourceImportView
-
+    RequirementChildrenViewSet, ProjectRequirementImportView, ProjectRequirementSourceImportView, MessageViewSet
+from .views import UsersViewSet, WhoAmIView
 router = routers.DefaultRouter()
+router.register(r'user', UsersViewSet)
 router.register(r'project', ProjectsViewSet)
 router.register(r'requirement-source', RequirementSourceViewSet)
 router.register(r'requirements', RequirementViewSet)
 router.register(r'requirement-childrens', RequirementChildrenViewSet, basename='a')
+
+router.register(r'message', MessageViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
@@ -35,4 +38,5 @@ urlpatterns = [
     path('requirements_import', RequirementImportView.as_view()),
     path('project_requirements_import', ProjectRequirementImportView.as_view()),
     path('project_requirements_sources_import', ProjectRequirementSourceImportView.as_view()),
+    path('whoami', WhoAmIView.as_view()),
 ]
