@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from requirements.models import Requirement, RequirementSource, Project
+from requirements.models import Requirement, RequirementSource, Project, Message
+
 
 class HistoricalRecordField(serializers.ListField):
     child = serializers.DictField()
@@ -21,7 +22,7 @@ class RequirementSourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RequirementSource
-        fields = '__all__'
+        fields = ['id', 'name', 'project', 'description', 'created_at', 'history']
 
 
 class RequirementSerializer(serializers.ModelSerializer):
@@ -30,7 +31,8 @@ class RequirementSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Requirement
-        fields = '__all__'
+        fields = ['id', 'project', 'source_reference', 'parent', 'req_identifier', 'ie_puid', 'name', 'type',
+                  'applicability', 'applicability_comment', 'requirement', 'notes', 'history', 'has_children']
 
     def get_has_children(self, obj):
         return obj.children.count() > 0
@@ -51,6 +53,19 @@ class RequirementChildrenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Requirement
         fields = ['children']
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'requirement', 'created_by', 'text']
+
+
+class MessageCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'requirement', 'text']
+
 
 class FileUploadSerializer(serializers.Serializer):
     file = serializers.FileField(use_url=False)

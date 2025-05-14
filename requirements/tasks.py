@@ -18,29 +18,35 @@ applicability_map = {'': 0,
                      'n': 2,
                      'P': 3}
 
-def import_project_compressed(filepath: Path, project):
+def import_project_compressed(filepath: Path, project, user):
     work_dir = filepath.parent.joinpath('workdir')
     work_dir.mkdir(parents=True, exist_ok=True)
     shutil.unpack_archive(filepath.resolve(), extract_dir=work_dir)
     for req_file in work_dir.glob('*.csv'):
         print("Importing", req_file)
-        source, created = RequirementSource.objects.get_or_create(name=req_file.stem, project=project)
+        source, created = RequirementSource.objects.get_or_create(
+            name=req_file.stem,
+            project=project,
+            defaults={
+                'created_by': user
+            }
+        )
         with open(req_file, 'r', encoding='utf-8') as f:
-            import_project_requirements(f, source)
+            import_project_requirements(f, source, user)
 
-def import_project_requirements(file, source_reference):
+def import_project_requirements(file, source_reference, user):
     #f = file.read().decode('utf-8')
     #reader = csv.DictReader(io.StringIO(f))
     reader = csv.DictReader(file)
     fields = set(reader.fieldnames)
     if fields >= {'ID', 'Object Heading and Object Text', 'Rationale/Comment', 'Object Type', 'Applicability',
                   'Applicability Comment'}:
-        import_project_requirements_v2(source_reference, reader)
+        import_project_requirements_v2(source_reference, reader, user)
     elif fields >= {'ID', 'Rationale/Comment', 'Req. Identifier', 'Section', 'Title', 'Text', 'Applicability', 'Applicability Comment'}:
-        import_project_requirements_v1(source_reference, reader)
+        import_project_requirements_v1(source_reference, reader, user)
 
 
-def get_parent(project, source_reference, section):
+def get_parent(project, source_reference, section, user):
     identifier = section
     number = "".join(filter(str.isnumeric, identifier))
     if '.' in identifier:
@@ -57,7 +63,8 @@ def get_parent(project, source_reference, section):
                                                                 source_reference=source_reference,
                                                                 name=req_id,
                                                                 type=RequirementType.Heading,
-                                                                defaults={'parent': parent})
+                                                                defaults={'parent': parent,
+                                                                          'created_by': user})
         if len(identifier_last_level) > 0:
             suffix = identifier_last_level.strip('0123456789')
             prefix = identifier_last_level[:len(suffix)]
@@ -65,39 +72,59 @@ def get_parent(project, source_reference, section):
                 req_id = req_id + '.' + prefix
                 parent, created = Requirement.objects.get_or_create(project=project, source_reference=source_reference,
                                                                     name=req_id, req_identifier=req_id,
-                                                                    defaults={'parent': parent})
+                                                                    defaults={'parent': parent,
+                                                                          'created_by': user})
         return parent
     elif identifier != number:
-        parent, created= Requirement.objects.get_or_create(project=project, source_reference=source_reference, name=number, req_identifier=number)
+        parent, created= Requirement.objects.get_or_create(
+            project=project,
+            source_reference=source_reference,
+            name=number,
+            req_identifier=number,
+            defaults={
+                'created_by': user
+            }
+        )
         return parent
     else:
         return None
 
 
-def import_requirements(file):
+def import_requirements(file, user):
     with open(file.temporary_file_path()) as f:
         reader = csv.DictReader(f)
         for row in reader:
             print(row)
-            project, created = Project.objects.get_or_create(name=row['DOORS Project'])
-            source_reference, created = RequirementSource.objects.get_or_create(name=row['ECSS Source Reference'],
-                                                                                project=project)
+            project, created = Project.objects.get_or_create(
+                name=row['DOORS Project'],
+                defaults={
+                    'created_by': user
+                }
+            )
+            source_reference, created = RequirementSource.objects.get_or_create(
+                name=row['ECSS Source Reference'],
+                project=project,
+                defaults={
+                    'created_by': user
+                }
+            )
             req, created = Requirement.objects.update_or_create(
                 project=project,
                 source_reference=source_reference,
-                parent=get_parent(project, source_reference, row, identifier_field='ECSS Req. Identifier'),
+                parent=get_parent(project, source_reference, row['ECSS Req. Identifier'], user),
                 name=row['ECSS Req. Identifier'],
                 req_identifier=row['ECSS Req. Identifier'],
                 defaults={
                     'type': type_map[row['Type']],
                     'ie_puid': row['IE PUID'],
                     'requirement': row['Original requirement'],
-                    'notes': row['Text of Note of Original requirement']
+                    'notes': row['Text of Note of Original requirement'],
+                    'created_by': user,
                 }
             )
 
 
-def import_project_requirements_v1(source_reference, reader):
+def import_project_requirements_v1(source_reference, reader, user):
     for row in reader:
         print(row)
 
@@ -111,11 +138,11 @@ def import_project_requirements_v1(source_reference, reader):
         data.applicability = applicability_map[row['Applicability']]
         data.applicability_comment = row['Applicability Comment'].strip()
 
-        parent_req = get_parent(source_reference.project, source_reference, data.section)
-        requirement_update_or_create(source_reference, parent_req, data)
+        parent_req = get_parent(source_reference.project, source_reference, data.section, user)
+        requirement_update_or_create(source_reference, parent_req, user, data)
 
 
-def import_project_requirements_v2(source_reference, reader):
+def import_project_requirements_v2(source_reference, reader, user):
     parent_req = None
     data = RequirementData()
     for row in reader:
@@ -148,15 +175,15 @@ def import_project_requirements_v2(source_reference, reader):
             #data.allowed_verification_methods = allowed_verification
             data.requirement_text = row['Object Heading and Object Text'][split+1:].strip()
 
-        if data.requirement_type == RequirementType.Heading: #and not first:
-            parent_req = get_parent(source_reference.project, source_reference, data.section)
+        if data.requirement_type == RequirementType.Heading:
+            parent_req = get_parent(source_reference.project, source_reference, data.section, user)
 
-        req = requirement_update_or_create(source_reference, parent_req, data)
+        req = requirement_update_or_create(source_reference, parent_req, user, data)
         if data.requirement_type == RequirementType.Heading:
             parent_req = req
 
 
-def requirement_update_or_create(source_reference, parent_req, data: RequirementData):
+def requirement_update_or_create(source_reference, parent_req, user, data: RequirementData):
     req, created = Requirement.objects.update_or_create(
         project=source_reference.project,
         source_reference=source_reference,
@@ -170,6 +197,7 @@ def requirement_update_or_create(source_reference, parent_req, data: Requirement
             'notes': None,
             'applicability': data.applicability,
             'applicability_comment': data.applicability_comment,
+            'created_by': user,
         }
     )
     return req

@@ -48,3 +48,10 @@ class Requirement(models.Model):
     requirement = models.TextField(null=True)
     notes = models.TextField(null=True, blank=True)
     history = HistoricalRecords()
+
+
+class Message(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    requirement = models.ForeignKey('Requirement', on_delete=models.CASCADE)
+    text = models.TextField()
