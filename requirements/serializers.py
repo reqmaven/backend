@@ -32,7 +32,8 @@ class RequirementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Requirement
         fields = ['id', 'project', 'source_reference', 'parent', 'req_identifier', 'ie_puid', 'name', 'type',
-                  'applicability', 'applicability_comment', 'requirement', 'notes', 'history', 'has_children']
+                  'applicability', 'applicability_comment', 'requirement', 'notes', 'history', 'has_children',
+                  'children']
 
     def get_has_children(self, obj):
         return obj.children.count() > 0

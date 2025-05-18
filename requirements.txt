@@ -7,4 +7,7 @@ django-simple-history
 Markdown==3.8
 sqlparse==0.5.3
 psycopg2
+django-celery-results
+celery
+celery-progress
 

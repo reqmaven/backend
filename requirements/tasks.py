@@ -1,5 +1,8 @@
 import csv
 import shutil
+from django.contrib.auth.models import User
+from celery import shared_task
+from celery_progress.backend import ProgressRecorder
 from pathlib import Path
 from .models import Project, RequirementSource, Requirement, RequirementType
 from .requirementsData import RequirementData
@@ -18,12 +21,17 @@ applicability_map = {'': 0,
                      'n': 2,
                      'P': 3}
 
-def import_project_compressed(filepath: Path, project, user):
+@shared_task(bind=True)
+def import_project_compressed(self, filepath, project_id, user_id):
+    filepath = Path(filepath)
+    project = Project.objects.get(pk=project_id)
+    user = User.objects.get(pk=user_id)
     work_dir = filepath.parent.joinpath('workdir')
     work_dir.mkdir(parents=True, exist_ok=True)
     shutil.unpack_archive(filepath.resolve(), extract_dir=work_dir)
-    for req_file in work_dir.glob('*.csv'):
-        print("Importing", req_file)
+    progress_recorder = ProgressRecorder(self)
+    filecount = len(list(work_dir.glob('*.csv')))
+    for i, req_file in enumerate(work_dir.glob('*.csv')):
         source, created = RequirementSource.objects.get_or_create(
             name=req_file.stem,
             project=project,
@@ -32,9 +40,11 @@ def import_project_compressed(filepath: Path, project, user):
             }
         )
         with open(req_file, 'r', encoding='utf-8') as f:
-            import_project_requirements(f, source, user)
+            progress_recorder.set_progress(i, filecount, description=f'Importing {req_file.stem}')
+            import_project_requirements(f, source, user, progress_recorder)
 
-def import_project_requirements(file, source_reference, user):
+
+def import_project_requirements(file, source_reference, user, progress_recorder):
     #f = file.read().decode('utf-8')
     #reader = csv.DictReader(io.StringIO(f))
     reader = csv.DictReader(file)
@@ -89,12 +99,27 @@ def get_parent(project, source_reference, section, user):
     else:
         return None
 
+@shared_task(bind=True)
+def import_requirements(self, filename, user_id):
+    filename = Path(filename)
+    user = User.objects.get(id=user_id)
+    progress_recorder = ProgressRecorder(self)
+    with open(filename, "r") as file:
+        line_count = sum(1 for line in file) - 1
+        progress_recorder.set_progress(1, line_count, description=f'Importing {filename.stem}')
 
-def import_requirements(file, user):
-    with open(file.temporary_file_path()) as f:
+
+    with open(filename) as f:
         reader = csv.DictReader(f)
-        for row in reader:
-            print(row)
+        if line_count >= 1000:
+            prescaler = int(line_count / 100)
+        elif line_count >= 50:
+            prescaler = 5
+        else:
+            prescaler = 1
+        for i, row in enumerate(reader):
+            if (i % prescaler) == 0:
+                progress_recorder.set_progress(i, line_count, description=f'Importing {filename.stem}')
             project, created = Project.objects.get_or_create(
                 name=row['DOORS Project'],
                 defaults={

@@ -39,4 +39,5 @@ urlpatterns = [
     path('project_requirements_import', ProjectRequirementImportView.as_view()),
     path('project_requirements_sources_import', ProjectRequirementSourceImportView.as_view()),
     path('whoami', WhoAmIView.as_view()),
+    re_path(r'^celery-progress/', include('celery_progress.urls')),
 ]

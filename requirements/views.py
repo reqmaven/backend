@@ -85,8 +85,12 @@ class RequirementImportView(views.APIView):
     def post(self, request):
         file = request.FILES['file']
         print(file)
+        tmpdirname = Path(tempfile.mkdtemp())
+        FileSystemStorage(location=tmpdirname).save(file.name, file)
+        filepath = tmpdirname.joinpath(file.name)
         try:
-            import_requirements(file, request.user)
+            result = import_requirements.delay(str(filepath.resolve()), request.user.id)
+            return Response({'task_id': result.task_id})
         except Exception as e:
             print(e)
 
@@ -121,7 +125,8 @@ class ProjectRequirementSourceImportView(views.APIView):
             tmpdirname = Path(tempfile.mkdtemp())
             FileSystemStorage(location=tmpdirname).save(file.name, file)
             filepath = tmpdirname.joinpath(file.name)
-            import_project_compressed(filepath, project, request.user)
+            result = import_project_compressed.delay(str(filepath.resolve()), project.id, request.user.id)
+            return Response({'task_id': result.task_id})
         except Exception as e:
             print("Exception", e)
 
