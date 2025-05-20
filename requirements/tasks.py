@@ -80,8 +80,11 @@ def get_parent(project, source_reference, section, user):
             prefix = identifier_last_level[:len(suffix)]
             if len(prefix) > 0:
                 req_id = req_id + '.' + prefix
-                parent, created = Requirement.objects.get_or_create(project=project, source_reference=source_reference,
-                                                                    name=req_id, req_identifier=req_id,
+                parent, created = Requirement.objects.get_or_create(project=project,
+                                                                    source_reference=source_reference,
+                                                                    name=req_id,
+                                                                    type=RequirementType.Heading,
+                                                                    req_identifier=req_id,
                                                                     defaults={'parent': parent,
                                                                           'created_by': user})
         return parent
@@ -90,6 +93,7 @@ def get_parent(project, source_reference, section, user):
             project=project,
             source_reference=source_reference,
             name=number,
+            type=RequirementType.Heading,
             req_identifier=number,
             defaults={
                 'created_by': user
