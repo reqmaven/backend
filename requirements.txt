@@ -10,4 +10,5 @@ psycopg2
 django-celery-results
 celery
 celery-progress
+redis
 
