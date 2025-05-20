@@ -47,6 +47,8 @@ class Requirement(models.Model):
     applicability_comment = models.TextField(null=True, blank=True)
     requirement = models.TextField(null=True)
     notes = models.TextField(null=True, blank=True)
+    caused_by = models.ManyToManyField('Requirement', related_name='causes', null=True, blank=True)
+    mentions = models.ManyToManyField('Requirement', related_name='mentioned_by', null=True, blank=True)
     history = HistoricalRecords()
 
 

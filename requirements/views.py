@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.core.files.storage import FileSystemStorage
 from .models import Requirement, Project, RequirementSource, Message
 from .serializers import RequirementSerializer, FileUploadSerializer, ProjectSerializer, RequirementSourceSerializer, \
-    RequirementChildrenSerializer, MessageSerializer, MessageCreateSerializer
+    RequirementChildrenSerializer, MessageSerializer, MessageCreateSerializer, RequirementCreateSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .tasks import import_requirements, import_project_requirements, import_project_compressed
 
@@ -43,6 +43,7 @@ class RequirementViewSet(viewsets.ModelViewSet):
 
     queryset = Requirement.objects.all()
     serializer_class = RequirementSerializer
+    pagination_class = StandardResultsSetPagination
     filterset_fields = {'project': ['exact', 'in'],
                         'source_reference': ['exact', 'in'],
                         'type': ['exact', 'in'],
@@ -50,6 +51,12 @@ class RequirementViewSet(viewsets.ModelViewSet):
                         'parent': ['exact', 'isnull']}
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     search_fields = ['requirement', 'notes']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return RequirementCreateSerializer
+        else:
+            return RequirementSerializer
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)

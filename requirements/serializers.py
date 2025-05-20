@@ -25,28 +25,41 @@ class RequirementSourceSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'project', 'description', 'created_at', 'history']
 
 
-class RequirementSerializer(serializers.ModelSerializer):
+class RequirementMinimalSerializer(serializers.ModelSerializer):
     has_children = serializers.SerializerMethodField()
+    class Meta:
+        model = Requirement
+        fields = ['id', 'req_identifier', 'name', 'type', 'applicability', 'requirement', 'ie_puid', 'has_children']
+
+    def get_has_children(self, obj):
+        return obj.children.count() > 0
+
+
+class RequirementSerializer(serializers.ModelSerializer):
+    has_children = serializers.SerializerMethodField(read_only=True)
     history = HistoricalRecordField(read_only=True)
+    caused_by = RequirementMinimalSerializer(many=True, read_only=True)
 
     class Meta:
         model = Requirement
         fields = ['id', 'project', 'source_reference', 'parent', 'req_identifier', 'ie_puid', 'name', 'type',
                   'applicability', 'applicability_comment', 'requirement', 'notes', 'history', 'has_children',
-                  'children']
+                  'children', 'caused_by', 'mentions']
 
     def get_has_children(self, obj):
         return obj.children.count() > 0
 
 
-class RequirementMinimalSerializer(serializers.ModelSerializer):
-    has_children = serializers.SerializerMethodField()
+class RequirementCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Requirement
-        fields = ['id', 'name', 'type', 'applicability', 'requirement', 'ie_puid', 'has_children']
+        fields = ['id', 'project', 'source_reference', 'parent', 'req_identifier', 'ie_puid', 'name', 'type',
+                  'applicability', 'applicability_comment', 'requirement', 'notes', 'caused_by',]
 
-    def get_has_children(self, obj):
-        return obj.children.count() > 0
+
+
+
+
 
 
 class RequirementChildrenSerializer(serializers.ModelSerializer):
